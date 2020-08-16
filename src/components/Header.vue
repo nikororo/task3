@@ -4,7 +4,7 @@
       <h1>To Do</h1>
       <div v-if="this.$store.state.user">
         {{this.$store.state.user}}
-        <button class="logout">Выйти</button>
+        <button @click="logOut()" class="logout">Выйти</button>
       </div>
       <div v-else class="message notLog">Вы не вошли в приложение <a href="/">Авторизация</a></div>
     </header>
@@ -14,7 +14,10 @@
 <script>
 export default {
   name: 'Header',
-  components: {
+  methods: {
+    logOut() {
+      this.$store.commit('logOut');
+    }
   }
 }
 </script>

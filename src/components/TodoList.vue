@@ -1,7 +1,7 @@
 <template>
   <div class="todo">
     <div>
-      <button class="todoList" v-for="list in lists" v-bind:key="list.listId">
+      <button class="todoList" v-for="list in this.$store.state.lists" v-bind:key="list.listName">
         {{list.listName}}
         <button class="close">×</button>
       </button>
@@ -17,15 +17,13 @@
 export default {
   name: 'TodoList',
   data: () => ({
-    lists: [
-      { listName: 'title1', listId: 1 },
-      { listName: 'title2', listId: 2 },
-      { listName: 'title3', listId: 3 },
-    ],
     newList: {
       name: ''
     }
-  })
+  }),
+  created() {
+    this.$store.dispatch('openTodo');
+  }
 }
 </script>
 

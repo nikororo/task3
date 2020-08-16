@@ -54,7 +54,6 @@ export default {
 
     authIsCorr() {
       this.$store.commit('authCorr');
-      this.$store.commit('actUser');
       this.$router.push('todo');
     }
   }
