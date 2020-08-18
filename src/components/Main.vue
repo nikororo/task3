@@ -22,6 +22,6 @@ export default {
     if (localStorage.user) {
       this.$store.commit('getUser');
     }
-  },
+  }
 }
 </script>

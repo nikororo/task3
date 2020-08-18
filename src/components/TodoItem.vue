@@ -1,26 +1,26 @@
 <template>
   <div>
     <div class="todoListItem"> 
-      <div class="todoItem" v-for="task in tasks" v-bind:key="task.id">
+      <div class="todoItem" v-for="task in this.$store.state.tasks" v-bind:key="task.id">
         <div class="cont">
-          <input type="checkbox" v-bind:id="task.id">
+          <input type="checkbox" v-bind:id="task.id" v-bind="{checked: task.done}" v-on:click="makeDone(task.taskName)">
           <label v-bind:for="task.id"></label>
-          <div class="important" ></div>
-          {{task.name}} 
+          <div class="important" v-if="task.important"></div>
+          <div v-bind:class="{done: task.done}">{{task.taskName}}</div>
         </div>
         <div class="data"> 
-          {{new Date().getDate()+'.'+ (new Date().getMonth()+1)+'.'+ new Date().getFullYear()+' '+new Date().getHours()+':'+new Date().getMinutes()}}
-          <button class="close">×</button>
+          {{task.dataCreated}}
+          <button class="delete" v-on:click="deleteTask(task.taskName)">×</button>
         </div>
       </div>
     </div>
     <div class="container__addTask">
       <div class="addCont">
-        <input type="text" placeholder="Добавить задачу..." />
-        <button><img src="../assets/plus.png" alt="+"></button>
+        <input v-model="newTask.name" type="text" placeholder="Добавить задачу..." />
+        <button v-on:click="createTask(newTask.name, newTask.important)"><img src="../assets/plus.png" alt="+"></button>
       </div>
       <div class="cont quick">
-        <input type="checkbox" id="quick">
+        <input v-model="newTask.important" type="checkbox" id="quick">
         <label for="quick">Срочное</label>
       </div>
     </div>
@@ -31,32 +31,33 @@
 export default {
   name: 'TodoItem',
   data: () => ({
-    tasks: [
-      { id: 1, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 2, name: 'Blogging with Vue' },
-      { id: 3, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 4, name: 'Blogging with Vue' },
-      { id: 5, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 6, name: 'Blogging with Vue' },
-      { id: 7, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 8, name: 'Blogging with Vue' },
-      { id: 9, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 21, name: 'Blogging with Vue' },
-      { id: 11, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 22, name: 'Blogging with Vue' },
-      { id: 13, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 14, name: 'Blogging with Vue' },
-      { id: 15, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 16, name: 'Blogging with Vue' },
-      { id: 17, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue' },
-      { id: 18, name: 'Blogging with Vue' },
-      { id: 19, name: 'My journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey withMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey withMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with VueMy journey with Vue with VueMy journey with Vue with VueMy journey with Vue with VueMy journey with Vue' },
-      { id: 20, name: 'Blogging with Vue' },
-    ],
     newTask: {
-      name: ''
+      name: '',
+      important: ''
     }
-  })
+  }),
+
+  methods: {
+    createTask(newTaskName, important) {
+      let dtCreated = new Date().getDate()+'.'+ (new Date().getMonth()+1)+'.'+ new Date().getFullYear()+' '+new Date().getHours()+':'+new Date().getMinutes();
+      let payload = {
+        newTaskName,
+        important,
+        dtCreated
+      }
+      this.$store.dispatch('createTask', payload);
+    },
+
+    makeDone(taskDoneName) {
+      this.$store.dispatch('makeDone', taskDoneName);
+    },
+
+    deleteTask(taskName) {
+      if (confirm(`Удалить задачу ${taskName}?`)) {
+        this.$store.dispatch('deleteTask', taskName);
+      } 
+    },
+  }
 }
 
 </script>
@@ -151,5 +152,10 @@ label {
   border: 1px solid #535353;
   background-color: lightcoral;
   border-radius: 50%;
+}
+
+.done {
+  text-decoration: line-through;
+  font-style: italic;
 }
 </style>

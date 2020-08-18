@@ -1,14 +1,20 @@
 <template>
   <div class="todo">
     <div>
-      <button class="todoList" v-for="list in this.$store.state.lists" v-bind:key="list.listName">
+      <button 
+        class="todoList" 
+        v-for="list in this.$store.state.lists" 
+        v-bind:key="list.listName" 
+        v-bind:class="thisActiveList===list.listName ? 'active' : ''"
+        v-on:click="openList(list.listName)"
+      >
         {{list.listName}}
-        <button class="close">×</button>
+        <button class="delete" v-on:click="deleteList(list.listName)">×</button>
       </button>
     </div>
     <div class="addCont">
       <input v-model="newList.name" type = "text" placeholder="Добавить список..." />
-      <button @click="createTodoList()"><img src="../assets/plus.png" alt="+"></button>
+      <button v-on:click="createList(newList.name)"><img src="../assets/plus.png" alt="+"></button>
     </div>
   </div>
 </template>
@@ -19,10 +25,31 @@ export default {
   data: () => ({
     newList: {
       name: ''
-    }
+    },
+    thisActiveList: ''
   }),
-  created() {
-    this.$store.dispatch('openTodo');
+
+  async created() {
+    await this.$store.dispatch('openTodo');
+    this.thisActiveList = this.$store.state.activeList;
+  },
+
+  methods: {
+    openList(listName) {
+      this.$store.dispatch('getTasks', listName);
+      this.thisActiveList = listName;
+    },
+
+    createList(newListName) {
+      this.$store.dispatch('createList', newListName);
+    },
+
+    async deleteList(listName) {
+      if (confirm(`Удалить список ${listName}?`)) {
+        await this.$store.dispatch('deleteList', listName);
+        this.thisActiveList = this.$store.state.activeList;
+      } 
+    }
   }
 }
 </script>
@@ -36,7 +63,7 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  max-width: 250px;
+  width: 250px;
   height: calc(100vh - 77px);
   border-right: 1px solid #535353;
 }
@@ -97,7 +124,7 @@ button:focus {
   outline: none;
 }
 
-.close {
+.delete {
   position: absolute;
   top: 0;
   right: 0;
@@ -105,5 +132,9 @@ button:focus {
   border: none;
   height: 20px;
   width: 20px;
+}
+
+.active {
+  background-color: #e7ffcd;
 }
 </style>

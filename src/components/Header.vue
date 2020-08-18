@@ -4,7 +4,7 @@
       <h1>To Do</h1>
       <div v-if="this.$store.state.user">
         {{this.$store.state.user}}
-        <button @click="logOut()" class="logout">Выйти</button>
+        <button v-on:click="logOut()" class="logout">Выйти</button>
       </div>
       <div v-else class="message notLog">Вы не вошли в приложение <a href="/">Авторизация</a></div>
     </header>

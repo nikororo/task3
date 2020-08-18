@@ -15,7 +15,8 @@ const store = new Vuex.Store({
     userID: '',
     lists: [],
     activeList: null,
-    tasks: []
+    tasks: [],
+    maxID: ''
   },
 
   mutations: {
@@ -45,6 +46,10 @@ const store = new Vuex.Store({
       localStorage.clear();
       state.user = ''; 
       state.userID = '';
+    },
+
+    newActiveList: (state, newListName) => {
+      state.activeList = newListName;
     }
   }, 
 
@@ -67,11 +72,40 @@ const store = new Vuex.Store({
         })
     },
 
-    getTasks: async ({state}) => {
+    createList: ({state, dispatch}, newListName) => {
       let db = firebase.database();
 
-      await db.ref(`/${state.userID}/${state.activeList}`).once('value')
-        .then(async (snap) => {
+      db.ref(`/${state.userID}/` + newListName).set({}[`${newListName}`] = '', (err) => 
+      {
+        if (!err) {
+          dispatch('openTodo');
+        } else {
+          console.log(err.message);
+        }
+      })
+    },
+
+    deleteList: async ({state, dispatch}, listName) => {
+      let db = firebase.database();
+
+      await db.ref(`/${state.userID}/` + listName).set(null, async (err) => {
+        if (!err) {
+          await dispatch('openTodo')
+        } else {
+          console.log(err.message);
+        }
+      })
+    },
+
+    getTasks: async ({state, commit}, newListName) => {
+      let db = firebase.database();
+      state.maxID = '';
+
+      if (newListName) {
+        commit('newActiveList', newListName)
+      }
+
+      await db.ref(`/${state.userID}/${state.activeList}`).on('value', async (snap) => {
           let value = snap.val();
           let result = [];
           for (let taskName in value) {
@@ -82,20 +116,69 @@ const store = new Vuex.Store({
               .then((snap) => {
                 let value = snap.val();
                 for (let attr in value) {
-                  task[`${attr}`] = true;
+                  task[`${attr}`] = value[attr];
+                  if (attr === 'id' && value[attr] > state.maxID) {
+                    state.maxID = value[attr];
+                  }
                 }
               });
             result.push(task);
           }
           state.tasks = result;
         })
-        .catch((err) => {
-          console.log(err.message);
-        }) 
     },
 
-    openTodo ({dispatch}) {
-      dispatch('getLists').then(() => {
+    createTask: ({state}, {dtCreated, important, newTaskName}) => {
+      let {maxID, activeList, userID} = state;
+      let db = firebase.database();
+
+      db.ref(`/${userID}/${activeList}/` + newTaskName).set({}[`${newTaskName}`] = '', (err) => 
+      {
+        if (!err) {
+          if (maxID) {
+            maxID = maxID + 1;
+          } else {
+            maxID = 0;
+          }
+
+          if (important) {
+            db.ref(`/${userID}/${activeList}/${newTaskName}`).set({'important': true, 'id': maxID, 'dataCreated': dtCreated}, (err) => 
+            { if (err) return console.log(err.message); });
+          } else {
+            db.ref(`/${userID}/${activeList}/${newTaskName}`).set({'id': maxID, 'dataCreated': dtCreated}, (err) => 
+            { if (err) return console.log(err.message); });
+          }
+        } else {
+          console.log(err.message);
+        }
+      })
+    },
+
+    makeDone: ({state}, taskDoneName) => {
+      const {tasks, activeList, userID} = state;
+      let db = firebase.database();
+
+      let taskDone = tasks.filter((task) => task.taskName == taskDoneName)[0]
+
+      if (taskDone.done) {
+        taskDone.done = false;
+      } else {
+        taskDone.done = true;
+      }
+
+      db.ref(`/${userID}/${activeList}/` + taskDoneName).set(taskDone, (err) => 
+      { if (err) console.log(err.message); });
+    },
+
+    deleteTask: async ({state}, taskName) => {
+      let db = firebase.database();
+
+      await db.ref(`/${state.userID}/${state.activeList}/` + taskName).set(null, (err) =>
+      { if (err) console.log(err.message); });
+    },
+
+    openTodo: async ({dispatch}) => {
+      await dispatch('getLists').then(() => {
         dispatch('getTasks');
       })
     }
