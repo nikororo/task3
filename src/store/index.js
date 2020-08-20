@@ -16,7 +16,7 @@ const store = new Vuex.Store({
     lists: [],
     activeList: null,
     tasks: [],
-    maxID: ''
+    maxID: 0
   },
 
   mutations: {
@@ -50,6 +50,10 @@ const store = new Vuex.Store({
 
     newActiveList: (state, newListName) => {
       state.activeList = newListName;
+    },
+
+    newMaxID: (state, newMaxID) => {
+      state.maxID = newMaxID;
     }
   }, 
 
@@ -68,19 +72,20 @@ const store = new Vuex.Store({
           state.activeList = result[0].listName;
         })
         .catch((err) => {
-          console.log(err.message);
+          console.error(err.message);
+          throw err;
         })
     },
 
-    createList: ({state, dispatch}, newListName) => {
+    createList: async ({state, dispatch}, newListName) => {
       let db = firebase.database();
 
-      db.ref(`/${state.userID}/` + newListName).set({}[`${newListName}`] = '', (err) => 
+      await db.ref(`/${state.userID}/` + newListName).set({}[`${newListName}`] = '', async (err) => 
       {
         if (!err) {
-          dispatch('openTodo');
+          await dispatch('openTodo');
         } else {
-          console.log(err.message);
+          throw err;
         }
       })
     },
@@ -92,22 +97,24 @@ const store = new Vuex.Store({
         if (!err) {
           await dispatch('openTodo')
         } else {
-          console.log(err.message);
+          throw err;
         }
       })
     },
 
     getTasks: async ({state, commit}, newListName) => {
       let db = firebase.database();
-      state.maxID = '';
+      commit('newMaxID', 0);
 
       if (newListName) {
         commit('newActiveList', newListName)
       }
 
-      await db.ref(`/${state.userID}/${state.activeList}`).on('value', async (snap) => {
+      db.ref(`/${state.userID}/${state.activeList}`).on('value', async (snap) => {
           let value = snap.val();
           let result = [];
+          let tmpMaxID = 0;
+
           for (let taskName in value) {
             let task = {};
             task.taskName = taskName;
@@ -117,39 +124,36 @@ const store = new Vuex.Store({
                 let value = snap.val();
                 for (let attr in value) {
                   task[`${attr}`] = value[attr];
-                  if (attr === 'id' && value[attr] > state.maxID) {
-                    state.maxID = value[attr];
+                  if (attr === 'id' && value[attr] > tmpMaxID) {
+                    tmpMaxID = value[attr];
                   }
                 }
               });
             result.push(task);
           }
+          commit('newMaxID', tmpMaxID);
           state.tasks = result;
         })
     },
 
-    createTask: ({state}, {dtCreated, important, newTaskName}) => {
+    createTask: ({state, commit}, {dtCreated, important, newTaskName}) => {
       let {maxID, activeList, userID} = state;
       let db = firebase.database();
 
       db.ref(`/${userID}/${activeList}/` + newTaskName).set({}[`${newTaskName}`] = '', (err) => 
       {
         if (!err) {
-          if (maxID) {
-            maxID = maxID + 1;
-          } else {
-            maxID = 0;
-          }
+          commit('newMaxID', maxID++);
 
           if (important) {
             db.ref(`/${userID}/${activeList}/${newTaskName}`).set({'important': true, 'id': maxID, 'dataCreated': dtCreated}, (err) => 
-            { if (err) return console.log(err.message); });
+            { if (err) throw err; });
           } else {
             db.ref(`/${userID}/${activeList}/${newTaskName}`).set({'id': maxID, 'dataCreated': dtCreated}, (err) => 
-            { if (err) return console.log(err.message); });
+            { if (err) throw err; });
           }
         } else {
-          console.log(err.message);
+          throw err;
         }
       })
     },
@@ -167,14 +171,14 @@ const store = new Vuex.Store({
       }
 
       db.ref(`/${userID}/${activeList}/` + taskDoneName).set(taskDone, (err) => 
-      { if (err) console.log(err.message); });
+      { if (err) throw err; });
     },
 
     deleteTask: async ({state}, taskName) => {
       let db = firebase.database();
 
       await db.ref(`/${state.userID}/${state.activeList}/` + taskName).set(null, (err) =>
-      { if (err) console.log(err.message); });
+      { if (err) throw err; });
     },
 
     openTodo: async ({dispatch}) => {
