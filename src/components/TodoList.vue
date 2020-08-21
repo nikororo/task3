@@ -5,7 +5,7 @@
         class="todoList" 
         v-for="list in this.$store.state.lists" 
         v-bind:key="list.listName" 
-        v-bind:class="thisActiveList===list.listName ? 'active' : ''"
+        v-bind:class="$store.state.activeList===list.listName ? 'active' : ''"
         v-on:click="openList(list.listName)"
       >
         {{list.listName}}
@@ -25,19 +25,16 @@ export default {
   data: () => ({
     newList: {
       name: ''
-    },
-    thisActiveList: ''
+    }
   }),
 
   async created() {
     await this.$store.dispatch('openTodo');
-    this.thisActiveList = this.$store.state.activeList;
   },
 
   methods: {
     openList(listName) {
       this.$store.dispatch('getTasks', listName);
-      this.thisActiveList = listName;
     },
 
     createList(newListName) {
@@ -47,7 +44,6 @@ export default {
     async deleteList(listName) {
       if (confirm(`Удалить список ${listName}?`)) {
         await this.$store.dispatch('deleteList', listName);
-        this.thisActiveList = this.$store.state.activeList;
       } 
     }
   }
